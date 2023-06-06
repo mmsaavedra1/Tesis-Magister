@@ -1,0 +1,75 @@
+moises@Moisess-Air Produccion-Tesis % python3 ~/Desktop/Produccion-Tesis/simulacion4.py
+
+Replica: 1
+Set parameter Username
+Academic license - for non-commercial use only - expires 2023-12-07
+Optimizacion 1
+Optimizacion 31
+Optimizacion 61
+Optimizacion 91
+Optimizacion 121
+Optimizacion 151
+Optimizacion 181
+Optimizacion 211
+Optimizacion 241
+Optimizacion 271
+Optimizacion 301
+Optimizacion 331
+Optimizacion 361
+Optimizacion 391
+Optimizacion 421
+Optimizacion 451
+Optimizacion 481
+Optimizacion 511
+Optimizacion 541
+Optimizacion 571
+Optimizacion 601
+
+Replica: 2
+Optimizacion 1
+Optimizacion 31
+Optimizacion 61
+Optimizacion 91
+Optimizacion 121
+Optimizacion 151
+Optimizacion 181
+Optimizacion 211
+Optimizacion 241
+Optimizacion 271
+Optimizacion 301
+Optimizacion 331
+Optimizacion 361
+Optimizacion 391
+Optimizacion 421
+Optimizacion 451
+Optimizacion 481
+Optimizacion 511
+Optimizacion 541
+Optimizacion 571
+Optimizacion 601
+
+Replica: 3
+Optimizacion 1
+Optimizacion 31
+Optimizacion 61
+Optimizacion 91
+Optimizacion 121
+Optimizacion 151
+Optimizacion 181
+Optimizacion 211
+Optimizacion 241
+Optimizacion 271
+Optimizacion 301
+Optimizacion 331
+Optimizacion 361
+Optimizacion 391
+Optimizacion 421
+Optimizacion 451
+Optimizacion 481
+Optimizacion 511
+Optimizacion 541
+Optimizacion 571
+Optimizacion 601
+Function run_replics(<__main__.Simulation object at 0x122554e80>,) {} Took 100.7788 seconds
+moises@Moisess-Air Produccion-Tesis % 
+

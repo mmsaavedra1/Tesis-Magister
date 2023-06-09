@@ -158,10 +158,16 @@ def model_2(
                         for i in range(len(p_compat_lists)) for t in T)
 
     # R2) Evitar canibalizacion de precios entre subproductos.
-    _, _, p_compat_2 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios2v3")
-    p_compat_lists_2 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_2.values())]
-    MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_2[i]) <= 0
-                        for i in range(len(p_compat_lists_2)) for t in T)
+    #_, _, p_compat_2 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios2v3")
+    #p_compat_lists_2 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_2.values())]
+    #MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_2[i]) <= 0
+    #                    for i in range(len(p_compat_lists_2)) for t in T)
+    
+    # R2) Evitar canibalizacion de precios entre subproductos.
+    #_, _, p_compat_3 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios3v3")
+    #p_compat_lists_3 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_3.values())]
+    #MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_3[i]) <= 0
+    #                    for i in range(len(p_compat_lists_3)) for t in T)
 
     # R3) Todos los insumos deben ser cortados
     MVPFCF.addConstrs(quicksum(X[k, t] for k in K) == q[t] for t in T)
@@ -204,16 +210,16 @@ def model_2(
     MVPFCF.addConstrs(W0[f, t, s] >= 0 for f,t,s in inv_inicial_sets)
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
-    B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
-    M = 1e9
+    #B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
+    #M = 1e9
     
-    MVPFCF.addConstrs(
-        M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
-    )
+    #MVPFCF.addConstrs(
+    #    M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
+    #)
 
-    MVPFCF.addConstrs(
-        B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
-    )
+    #MVPFCF.addConstrs(
+    #    B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
+    #)
     
     
     ##################################### CASE 1 ##############################################
@@ -236,7 +242,7 @@ def model_2(
 
     # 6º Optimizar el modelo
     MVPFCF.update()
-    MVPFCF.write("modelo.lp")
+    #MVPFCF.write("modelo.lp")
     MVPFCF.optimize()
 
 
@@ -318,6 +324,7 @@ def model_2(
             produccion_w = pd.DataFrame([(*key, value) for (key, value) in W_.items()]).rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
             produccion_w = produccion_w.rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
 
+
             return inventario, demanda, demanda_alfa_beta, precio, merma, produccion_w, X
 
 
@@ -341,7 +348,10 @@ def model_2(
 
             produccion_w = pd.DataFrame([(*key, value) for (key, value) in W_.items()]).rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
             produccion_w = produccion_w.rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
-            produccion_w = produccion_w.set_index(['f', 't', 's']).to_dict()['value']
+
+            produccion_w.to_excel('produccion_w.xlsx')
+
+            #produccion_w = produccion_w.set_index(['f', 't', 's']).to_dict()['value']
             # Obtencion de la demanda, el inventario y la produccion
 
             return demands, production, price, pattern_use, MVPFCF.objVal, MVPFCF.Runtime, inventario, demanda, produccion_w

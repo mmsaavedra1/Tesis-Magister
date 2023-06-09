@@ -27,7 +27,7 @@ def refresh_S0(S0, f, delta, demand):
         if S0[f][i2+1] < 0:
             S0[f][i2+1] = 0
         S0[f][i2] = S0[f][i2+1]
-    return demand, merma
+    return demand, merma, S0
 
 
 # Decorador para medir tiempo de ejecución
@@ -144,7 +144,7 @@ class Simulation:
             if n_opti == self.remaining_days:
                 n_opti = 0
                 # 4.2º Optimizar
-                demands, production, price, pattern_use, objective_function, runtime, inventario, demanda, produccion_w = self.model(
+                demands, production, price, pattern_use, objective_function, runtime, inventario, demanda, w = self.model(
                     string_input=self.filename,
                     mip_gap=self.mip_gap,
                     time_limit=self.time_limit,
@@ -161,6 +161,7 @@ class Simulation:
 
                 # 4.2 Ordenar decisiones en el tiempo
                 for n in range(self.remaining_days):
+                    #print(f"    Simulacion {t} - Optimizacion {n+1} - Guardado en Simulacion {t+n}")
                     for k in K:
                         self.X[k, t+n, r] = pattern_use[(k, n+1)]
                         # Copiar politicas de corte
@@ -168,10 +169,12 @@ class Simulation:
                         #    self.X[k, t, r] = X_escenario_1[k, t, r]
 
                     for f in F:
-                        self.P[f, t+n, r] = price[(f, n+1)]                                     # OPCION 1: PRECIOS CONTINUOS
-                        #self.P[f, t+n, r] = round(price[(f, n+1)], 2)                           # OPCION 2: PRECIOS CONTINUOS RENDONDEADOS
-                        self.prod[f, t+n, r] = sum(a[f][k]*pattern_use[(k, n+1)] for k in K)  
+                        self.P[f, t+n, r] = price[(f, n+1)]                                            # OPCION 1: PRECIOS CONTINUOS
+                        #self.P[f, t+n, r] = round(price[(f, n+1)], 2)                                   # OPCION 2: PRECIOS CONTINUOS RENDONDEADOS
                         
+                        self.prod[f, t+n, r] = sum(a[f][k]* self.X[k, t+n, r] for k in K)                                               #OPCION 1: Produccion
+                        #self.prod[f, t+n, r] = w[w.f == f][w.s == n+1].loc[(w.t >= max(n+1-delta, 1)), ['value']].sum()['value']       #OPCION 2: Produccion Determinista
+
                         # Copiar politicas de precios y produccion
                         #if (self.n_escenario == 6):  
                         #    self.prod[f,t,r] = prod_escenario_1[f, t, r]
@@ -186,7 +189,7 @@ class Simulation:
 
                 # 4.3.1º Generar realización de demanda para cambiar el sistema
                 D_error = 0
-                D_error = -0.4 + self.error_dda[str(r)][str(t)][f]*0.8              # +- 40% de error         
+                D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2              # +- 40% de error         
                 this_demand = max((1 + D_error)*self.D[f, t, r], 0)                 # +- 40% de error 
                 self.D_real[(f, t, r)] = this_demand
 
@@ -194,7 +197,7 @@ class Simulation:
                 if f == "Entero" and self._print:
                     archi1.write(f"Inicio en {t}:\n")
 
-                    archi1.write(f"(Inv inicial) Simulacion: {sum(list(S0[f].values()))}\n")
+                    archi1.write(f"(Inv inicial) Simulacion: {self.S_inicial[f, t, r]}\n")
                     archi1.write("\n****** Detalle de inventario: *******\n")
                     for u in range(1, self.delta+1):
                         archi1.write(f"Inventario venta en {u}: {S0[f][u]}\n")
@@ -217,9 +220,9 @@ class Simulation:
                 # ************* LOG *************
 
                 # 4.3.3º Actualizacion de variables de estado del sistema 
-                unserved_demand, this_L = refresh_S0(S0, f, self.delta, this_demand)
+                unserved_demand, this_L, S0 = refresh_S0(S0, f, self.delta, this_demand)
                 self.sales[f, t, r] = self.D_real[(f, t, r)] - unserved_demand
-                self.S[f, t, r] = sum(list(S0[f].values()))
+                self.S[f, t, r] = sum(list(S0[f].values()).copy())
                 self.L[f, t, r] = this_L
 
                  # ************* LOG *************
@@ -241,12 +244,13 @@ class Simulation:
                     archi1.write("***************************\n\n")
                 # ************* LOG *************
                 
-             # 4.4º Almacenar valor objetivo como metrica            
+                # 4.4º Almacenar valor objetivo como metrica            
+                if (t >= 251) and (t <= self.times):
+                        self.ingresos[f, t, r] = self.P[f, t, r] * self.sales[(f, t, r)]
+                        self.costo_inventario[f, t, r] = h[f][1] * self.S[f, t, r]               # 0.478 $/caja
+                        self.costo_merma[f, t, r] = c_merma[f][1] * self.L[f, t, r]              # 0.956 $/caja
+            
             if (t >= 251) and (t <= self.times):
-                for f in F:
-                    self.ingresos[f, t, r] = self.P[f, t, r] * self.sales[(f, t, r)]
-                    self.costo_inventario[f, t, r] = h[f][1] * self.S[f, t, r]               # 0.478 $/caja
-                    self.costo_merma[f, t, r] = c_merma[f][1] * self.L[f, t, r]              # 0.956 $/caja
                 for k in K:
                     self.costo_corte[k, t, r] = c[k] * self.X[k, t, r]
 
@@ -255,7 +259,6 @@ class Simulation:
                     - quicksum(self.costo_inventario[f, t, r] for f in F).getValue() \
                     - quicksum(self.costo_merma[f, t, r] for f in F).getValue() \
                     - quicksum(self.costo_corte[k, t, r] for k in K).getValue()
-                    
 
             # 4.5º Actualizar valores para terminar la semana
             n_opti += 1
@@ -275,17 +278,17 @@ class Simulation:
 
     def save_to_pickle(self, n_escenario):
         directorio = f"~/Desktop/Produccion-Tesis/Resultados/Escenario {n_escenario}/"
-        pd.Series(self.X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_pickle(directorio+"X.pkl")
-        pd.Series(self.S).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"S.pkl")
-        pd.Series(self.S_inicial).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"S_inicial.pkl")
-        pd.Series(self.D).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"D.pkl")
-        pd.Series(self.P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"P.pkl")
-        pd.Series(self.L).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"L.pkl")
-        pd.Series(self.D_real).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"D_real.pkl")
-        pd.Series(self.sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"sales.pkl")
-        pd.Series(self.prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"prod.pkl")
-        pd.Series(self.objective_value).rename_axis(['t', 'r']).reset_index(name='value').to_pickle(directorio+"objective_value.pkl")
-        pd.Series(self.ingresos).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"ingresos.pkl")
-        pd.Series(self.costo_inventario).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"costo_inventario.pkl")
-        pd.Series(self.costo_merma).rename_axis(['f', 't', 'r']).reset_index(name='value').to_pickle(directorio+"costo_merma.pkl")
-        pd.Series(self.costo_corte).rename_axis(['k', 't', 'r']).reset_index(name='value').to_pickle(directorio+"costo_corte.pkl")
+        pd.Series(self.X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_excel(directorio+"X.xlsx", engine='openpyxl')
+        pd.Series(self.S).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"S.xlsx", engine='openpyxl')
+        pd.Series(self.S_inicial).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"S_inicial.xlsx", engine='openpyxl')
+        pd.Series(self.D).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"D.xlsx", engine='openpyxl')
+        pd.Series(self.P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"P.xlsx", engine='openpyxl')
+        pd.Series(self.L).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"L.xlsx", engine='openpyxl')
+        pd.Series(self.D_real).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"D_real.xlsx", engine='openpyxl')
+        pd.Series(self.sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"sales.xlsx", engine='openpyxl')
+        pd.Series(self.prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod.xlsx", engine='openpyxl')
+        pd.Series(self.objective_value).rename_axis(['t', 'r']).reset_index(name='value').to_excel(directorio+"objective_value.xlsx", engine='openpyxl')
+        pd.Series(self.ingresos).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"ingresos.xlsx", engine='openpyxl')
+        pd.Series(self.costo_inventario).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_inventario.xlsx", engine='openpyxl')
+        pd.Series(self.costo_merma).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_merma.xlsx", engine='openpyxl')
+        pd.Series(self.costo_corte).rename_axis(['k', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_corte.xlsx", engine='openpyxl')

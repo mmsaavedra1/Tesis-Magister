@@ -157,17 +157,19 @@ def model_2(
     MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists[i]) >= 0
                         for i in range(len(p_compat_lists)) for t in T)
 
+
     # R2) Evitar canibalizacion de precios entre subproductos.
-    #_, _, p_compat_2 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios2v3")
-    #p_compat_lists_2 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_2.values())]
-    #MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_2[i]) <= 0
-    #                    for i in range(len(p_compat_lists_2)) for t in T)
+    _, _, p_compat_2 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios2v3")
+    p_compat_lists_2 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_2.values())]
+    MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_2[i]) <= 0
+                        for i in range(len(p_compat_lists_2)) for t in T)
     
-    # R2) Evitar canibalizacion de precios entre subproductos.
+    # R2.1) Evitar canibalizacion de precios entre subproductos.
     #_, _, p_compat_3 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios3v3")
     #p_compat_lists_3 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_3.values())]
     #MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_3[i]) <= 0
     #                    for i in range(len(p_compat_lists_3)) for t in T)
+    
 
     # R3) Todos los insumos deben ser cortados
     MVPFCF.addConstrs(quicksum(X[k, t] for k in K) == q[t] for t in T)
@@ -176,18 +178,18 @@ def model_2(
     MVPFCF.addConstrs(quicksum(a[f][k] * X[k, t] for k in K) == quicksum(W[f, t, s] for s in range(t, min(t + delta, T[-1] + 2))) for f in F for t in T)
 
     # R5.1) NUEVA: Satisfaccion de demanda
-    MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
-                    + quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
-                    ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(1, delta)) #demanda + merma
+    #MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
+    #                + quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+    #                ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(1, delta)) #demanda + merma
 
     # R5.2) NUEVA: Distribucion inventario inicial FIFO --> Asignacion de inventario inicial por caducar debe ser FIFO
-    MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
-                    ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(delta, T[-1]+1)) #demanda + merma
+    #MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+    #                ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(delta, T[-1]+1)) #demanda + merma
     
     # R5.original
-    #MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
-    #                    + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s + 1)) #produccion
-    #                    == (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in T) #demanda + merma
+    MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
+                        + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s + 1)) #produccion
+                        == (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in T) #demanda + merma
 
     # R6) Relacion entre merma y asignacion, desde período delta
     MVPFCF.addConstrs(W[f, s - delta + 1, s] # produccion que vence en s y es asignada a s

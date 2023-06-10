@@ -9,6 +9,7 @@ import collections, functools, operator
 import pickle
 
 from M2 import *
+from logger_simulacion import *
 
 # Parameters of system
 warnings.filterwarnings("ignore")
@@ -103,8 +104,6 @@ class Simulation:
         F, T, T_delta, T_0, T_0_delta, K, alfa, beta, delta, S0, a, h, c, q, \
         c_merma, p_constante, p_compat, v_constante = self.get_parameters()
 
-        #_, _, a = read_sheet(read_filename, "Patrones - Piezas")
-
         pesos = {
         'Entero': 1.860,
         'Medio Pollo': 0.930,
@@ -125,15 +124,7 @@ class Simulation:
         # 2º Seteo de parametros de simlacion
         n_opti = self.remaining_days
 
-        # 3º Cargar soluciones de escenario 6
-        #if self.n_escenario == 6:
-        #    with open("prod.dat", "rb") as f:
-        #        prod_escenario_1 = pickle.load(f)
-        #    with open("P.dat", "rb") as f:
-        #        P_escenario_1 = pickle.load(f)
-        #    with open("X.dat", "rb") as f:
-        #        X_escenario_1 = pickle.load(f)
-
+        # 3º Cargar logger
         if self._print:
             archi1=open(f"Logger/Simulacion {self.n_escenario}.txt","w")
 
@@ -161,26 +152,21 @@ class Simulation:
 
                 # 4.2 Ordenar decisiones en el tiempo
                 for n in range(self.remaining_days):
-                    #print(f"    Simulacion {t} - Optimizacion {n+1} - Guardado en Simulacion {t+n}")
                     for k in K:
                         self.X[k, t+n, r] = pattern_use[(k, n+1)]
-                        # Copiar politicas de corte
-                        #if (self.n_escenario == 6):  
-                        #    self.X[k, t, r] = X_escenario_1[k, t, r]
-
+                       
                     for f in F:
-                        self.P[f, t+n, r] = price[(f, n+1)]                                            # OPCION 1: PRECIOS CONTINUOS
-                        #self.P[f, t+n, r] = round(price[(f, n+1)], 2)                                   # OPCION 2: PRECIOS CONTINUOS RENDONDEADOS
+                        # Precios
+                        #self.P[f, t+n, r] = price[(f, n+1)]                                            # OPCION 1: PRECIOS CONTINUOS
+                        self.P[f, t+n, r] = round(price[(f, n+1)], 2)                                   # OPCION 2: PRECIOS CONTINUOS RENDONDEADOS
                         
+                        # Produccion
                         self.prod[f, t+n, r] = sum(a[f][k]* self.X[k, t+n, r] for k in K)                                               #OPCION 1: Produccion
                         #self.prod[f, t+n, r] = w[w.f == f][w.s == n+1].loc[(w.t >= max(n+1-delta, 1)), ['value']].sum()['value']       #OPCION 2: Produccion Determinista
 
-                        # Copiar politicas de precios y produccion
-                        #if (self.n_escenario == 6):  
-                        #    self.prod[f,t,r] = prod_escenario_1[f, t, r]
-                        #    self.P[f, t, r] = P_escenario_1[f, t, r]   
-                        #self.D[f, t+n, r] = demanda[(f, n+1)]                                  # OPCION 1: Calculo Demanda (OBSOLETA)
+                        # Generar Demanda en funcion del Precio
                         self.D[f, t+n, r] = alfa[f][n+1]-(beta[f][n+1]*self.P[f, t+n, r])       # OPCION 2: Calculo Demanda según decisiones
+
 
             # 4.3º Actualizar estados
             for f in F:
@@ -189,23 +175,13 @@ class Simulation:
 
                 # 4.3.1º Generar realización de demanda para cambiar el sistema
                 D_error = 0
-                D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2              # +- 40% de error         
-                this_demand = max((1 + D_error)*self.D[f, t, r], 0)                 # +- 40% de error 
+                D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2                         # +- 60% de error         
+                this_demand = min(alfa[f][1], max((1 + D_error)*self.D[f, t, r], 0))            # +- 60% de error 
                 self.D_real[(f, t, r)] = this_demand
 
                 # ************* LOG *************
                 if f == "Entero" and self._print:
-                    archi1.write(f"Inicio en {t}:\n")
-
-                    archi1.write(f"(Inv inicial) Simulacion: {self.S_inicial[f, t, r]}\n")
-                    archi1.write("\n****** Detalle de inventario: *******\n")
-                    for u in range(1, self.delta+1):
-                        archi1.write(f"Inventario venta en {u}: {S0[f][u]}\n")
-                    archi1.write("****** Fin Detalle de inventario: *******\n\n")
-
-                    archi1.write("\n****** Detalle de Produccion: *******\n")
-                    archi1.write(f"(Produccion) Simulacion: {self.prod[f,t,r]}\n")
-                    archi1.write("****** Fin Detalle de produccion: *******\n\n")
+                    logger_inventario_inicial(archi1, f, t, r, self.delta, self.S_inicial, S0, self.prod)
                 # ************* LOG *************
             
                 # 4.3.2º Inventario inicial en funcion de la produccion
@@ -213,10 +189,7 @@ class Simulation:
     
                 # ************* LOG *************
                 if f == "Entero" and self._print:
-                    archi1.write("\n****** Detalle de inventario actualizado: *******\n")
-                    for u in range(1, self.delta+1):
-                        archi1.write(f"Inventario en {t} para que vence en {t+u-1}: {S0[f][u]}\n")
-                    archi1.write("\n****** Fin de inventario actualizado: *******\n\n")
+                    logger_inventario_actualizado(archi1, self.delta, f, t, S0)
                 # ************* LOG *************
 
                 # 4.3.3º Actualizacion de variables de estado del sistema 
@@ -227,30 +200,17 @@ class Simulation:
 
                  # ************* LOG *************
                 if f == "Entero" and self._print:
-                    archi1.write(f"\Ventas en {t}:\n")
-                    archi1.write(f"(Demanda) [alfa-beta*p]) Opti: {self.D[f, t, r]}\n")
-                    archi1.write(f"(Error) Simulacion: {self.error_dda[str(r)][str(t)][f]}\n")
-                    archi1.write(f"(Factor Dcto) Simulacion: {-0.4 + self.error_dda[str(r)][str(t)][f]*0.8}\n")
-                    archi1.write(f"(Demanda) Simulacion: {self.D_real[(f, t, r)]}\n")
-                    archi1.write(f"(Venta) Simulacion: {self.sales[(f, t, r)]}\n")
+                    logger_ventas(archi1, f, t, r, self.D, self.error_dda, self.D_real, self.sales, self.L, self.P, S0)
                 # ************* LOG *************
 
-                # ************* LOG *************
-                if f == "Entero" and self._print:
-                    archi1.write(f"\nFinal en {t}:\n")
-                    archi1.write(f"(Merma) Simulacion: {self.L[f, t, r]}\n")
-                    archi1.write(f"(Precio de venta) Simulacion: {self.P[f, t, r]}\n")
-                    archi1.write(f"(Inv final) Simulacion: {sum(list(S0[f].values()))}\n")
-                    archi1.write("***************************\n\n")
-                # ************* LOG *************
-                
-                # 4.4º Almacenar valor objetivo como metrica            
-                if (t >= 251) and (t <= self.times):
+                # 4.4º Almacenar metricas de producto           
+                if t <= self.times:
                         self.ingresos[f, t, r] = self.P[f, t, r] * self.sales[(f, t, r)]
                         self.costo_inventario[f, t, r] = h[f][1] * self.S[f, t, r]               # 0.478 $/caja
                         self.costo_merma[f, t, r] = c_merma[f][1] * self.L[f, t, r]              # 0.956 $/caja
             
-            if (t >= 251) and (t <= self.times):
+            # 4.5º Almacenar metricas de sistema           
+            if t <= self.times:
                 for k in K:
                     self.costo_corte[k, t, r] = c[k] * self.X[k, t, r]
 
@@ -260,21 +220,16 @@ class Simulation:
                     - quicksum(self.costo_merma[f, t, r] for f in F).getValue() \
                     - quicksum(self.costo_corte[k, t, r] for k in K).getValue()
 
-            # 4.5º Actualizar valores para terminar la semana
+            # 4.6º Actualizar valores para terminar la semana
             n_opti += 1
 
         if self._print:
             archi1.close()
-            
-        return True
-               
     
     @timeit
     def run_replics(self):
         for r in range(1, self.replics+1):
-            obj_val = self.run(r)
-            self.out_obj_val[r] = obj_val
-
+            self.run(r)
 
     def save_to_pickle(self, n_escenario):
         directorio = f"~/Desktop/Produccion-Tesis/Resultados/Escenario {n_escenario}/"

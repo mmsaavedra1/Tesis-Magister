@@ -6,7 +6,7 @@ DELTA = 9
 REPLICS = 1
 
 PERIODS=30
-TIMES=500
+TIMES=250
 
 import json
 import random

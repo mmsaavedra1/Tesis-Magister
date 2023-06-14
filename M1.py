@@ -127,16 +127,11 @@ def model_1(string_input, mip_gap, time_limit, scaler, periods=None, case=0, ite
     # Demandas FIFO
     #Inventario inicial en t de producto final F que vence en u=t,t+1...t+delta-1
     inventario_incial_set = [(f, t, u) for f in F for t in T for u in range(t, t + delta)]
-
     W0 = MVTPI.addVars(inventario_incial_set, vtype=GRB.CONTINUOUS, lb=0,  name = 's')
-
-    MVTPI.addConstrs(W0[f, 1, u] == S0[f][u] for u in range(1, delta+1) for f in F)
-    
+    MVTPI.addConstrs(W0[f, 1, u] == S0[f][u] for u in range(1, delta) for f in F)
     MVTPI.addConstrs(W0[f, t+1, u] == S[f, t, u] for f in F for t in T[:-1] for u in range(t+1, t+delta) )
-    
-    MVTPI.addConstrs(
-        W0[f, t+1, t+1] == S[f, t, t+1] for f in F for t in T[:-1]
-    )
+    MVTPI.addConstrs(W0[f, t+1, u] <= W0[f, t, u] for f in F for t in T[:-1] for u in range(t+1, t+delta))
+
 
     ##################################### CASE 1 ##############################################
     # Case 1: , pero sigue siendo una variable.
@@ -159,15 +154,12 @@ def model_1(string_input, mip_gap, time_limit, scaler, periods=None, case=0, ite
             
             # Obtencion de la demanda, el inventario y la produccion          
             inventario = {(f,t,u): S[f, t, u].X for (f,t,u) in inventario_set}
-
             inventario = pd.DataFrame([(*key, value) for (key, value) in inventario.items()]).rename(columns={0: 'f', 1: 't', 2:'u', 3: 'value'})
-            inventario = inventario.groupby(['f', 't']).sum().reset_index()[['f', 't', 'value']]
-            inventario = inventario.set_index(['f', 't']).to_dict()['value']
+            inventario = inventario.set_index(['f', 't', 'u']).to_dict()['value']
 
             demanda = {(f,t,u): D[f, t, u].X for (f, t, u) in demanda_set}
             demanda = pd.DataFrame([(*key, value) for (key, value) in demanda.items()]).rename(columns={0: 'f', 1: 't', 2:'u', 3: 'value'})
-            demanda = demanda.groupby(['f', 't']).sum().reset_index()[['f', 't', 'value']]
-            demanda = demanda.set_index(['f', 't']).to_dict()['value']
+            demanda = demanda.set_index(['f', 't', 'u']).to_dict()['value']
 
             merma = {(f,t): L[f, t] for f in F for t in T}
             merma = pd.DataFrame([(*key, value) for (key, value) in merma.items()]).rename(columns={0: 'f', 1: 't', 2: 'value'})
@@ -177,7 +169,9 @@ def model_1(string_input, mip_gap, time_limit, scaler, periods=None, case=0, ite
             #W0_ = {(f,t,u): S[f, t, u].X for (f,t,u) in inventario_set}
             #W0_ = pd.DataFrame([(*key, value) for (key, value) in W0_.items()]).rename(columns={0: 'f', 1: 't', 2:'u', 3: 'value'})
             #print(W0_.head(10))
-            return demands, production, price, pattern_use, MVTPI.objVal, MVTPI.Runtime, inventario, demanda, produccion_w, L, W0_
+
+            return production, price, pattern_use, inventario, demands, L, W0_, demanda
+            #return opti_produccion, opti_precio, opti_patrones, opti_inv_final, opti_demanda, opti_merma, opti_inv_inicial, opti_demanda_perecible
 
 
     return status, opt_value

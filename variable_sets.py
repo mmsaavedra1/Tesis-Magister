@@ -37,6 +37,10 @@ def W0_sets(F, delta):
 
     return [(f, s, u) for f in F for s in range(1, delta) for u in range(s, delta)]
 
+def W0_sets_v2(F, T, delta):
+
+    return [(f, s, u) for f in F for s in T for u in range(s, s+delta-1)]
+
 #Inventarios en t que vence en u de producto f
 def I_sets(F, T, delta):
     return [(t,u,f) for f in F for t in T for u in range(1, delta+1)]

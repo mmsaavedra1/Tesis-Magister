@@ -172,11 +172,11 @@ def model_2(
 
     # R5.1) NUEVA: Satisfaccion de demanda
     MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
-                    + quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+                    + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s+1)) #produccion
                     ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(1, delta)) #demanda + merma
 
     # R5.2) NUEVA: Distribucion inventario inicial FIFO --> Asignacion de inventario inicial por caducar debe ser FIFO
-    MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+    MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s+1)) #produccion
                     ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(delta, T[-1]+1)) #demanda + merma
     
     # R5.original
@@ -184,20 +184,19 @@ def model_2(
     #                    + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s + 1)) #produccion
     #                    == (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in T) #demanda + merma
 
-    # R6) Relacion entre merma y asignacion, desde período delta
+    # R6).original Relacion entre merma y asignacion, desde período delta
     MVPFCF.addConstrs(W[f, s - delta + 1, s] # produccion que vence en s y es asignada a s
                       >= L[f, s] for f in F for s in range(delta, last_t + 1))  # demanda + merma
 
-    # R7) Relacion entre merma y asignacion, hasta período delta - 1
+    # R7).original Relacion entre merma y asignacion, hasta período delta - 1
     MVPFCF.addConstrs(W0[f, s, s]  # inventario inicial que vence en s y es asignado a s
                       >= L[f, s] for f in F for s in range(1, delta))  # merma
+    
+    # R8).original Todo el inventario inicial es asignado a alågún período
+    MVPFCF.addConstrs(quicksum(W0[f, s, u] for s in range(1, u + 1)) 
+                      == S0[f][u] for f in F for u in range(1, delta))
 
-    # R8) Todo el inventario inicial es asignado a alågún período
-    MVPFCF.addConstrs(
-        quicksum(W0[f, s, u] for s in range(1, u + 1)) == S0[f][u] for f in F for u in range(1, delta)
-    )
-
-    # R9) Relación de precio
+    # R9).original Relación de precio
     MVPFCF.addConstrs(P[f, s] <= alfa[f][s]/beta[f][s] for f in F for s in T if beta[f][s] != 0)
 
     # R10) No negatividad de asignacion de venta
@@ -207,15 +206,15 @@ def model_2(
 
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
-    B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
-    M = 1e9
+    #B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
+    #M = 1e9
 
-    MVPFCF.addConstrs(
-        M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
-    )
-    MVPFCF.addConstrs(
-        B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
-    )
+    #MVPFCF.addConstrs(
+    #    M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
+    #)
+    #MVPFCF.addConstrs(
+    #    B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
+    #)
 
 
     ##################################### CASE 1 ##############################################

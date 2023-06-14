@@ -163,13 +163,6 @@ def model_2(
     p_compat_lists_2 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_2.values())]
     MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_2[i]) <= 0
                         for i in range(len(p_compat_lists_2)) for t in T)
-    
-    # R2.1) Evitar canibalizacion de precios entre subproductos.
-    #_, _, p_compat_3 = read_sheet(f"~/Desktop/Produccion-Tesis/Input/{string_input}.xlsx", "Restricciones-Precios3v3")
-    #p_compat_lists_3 = [list(zip(f_quants.keys(), f_quants.values())) for f_quants in list(p_compat_3.values())]
-    #MVPFCF.addConstrs(quicksum(P[f, t]*quantity for f, quantity in p_compat_lists_3[i]) <= 0
-    #                    for i in range(len(p_compat_lists_3)) for t in T)
-    
 
     # R3) Todos los insumos deben ser cortados
     MVPFCF.addConstrs(quicksum(X[k, t] for k in K) == q[t] for t in T)
@@ -178,18 +171,18 @@ def model_2(
     MVPFCF.addConstrs(quicksum(a[f][k] * X[k, t] for k in K) == quicksum(W[f, t, s] for s in range(t, min(t + delta, T[-1] + 2))) for f in F for t in T)
 
     # R5.1) NUEVA: Satisfaccion de demanda
-    #MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
-    #                + quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
-    #                ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(1, delta)) #demanda + merma
+    MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
+                    + quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+                    ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(1, delta)) #demanda + merma
 
     # R5.2) NUEVA: Distribucion inventario inicial FIFO --> Asignacion de inventario inicial por caducar debe ser FIFO
-    #MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
-    #                ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(delta, T[-1]+1)) #demanda + merma
+    MVPFCF.addConstrs(quicksum(W[f, t, s] for t in range(max(1, s - delta + 1), s + 1)) #produccion
+                    ==  (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in range(delta, T[-1]+1)) #demanda + merma
     
     # R5.original
-    MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
-                        + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s + 1)) #produccion
-                        == (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in T) #demanda + merma
+    #MVPFCF.addConstrs(quicksum(W0[f, s, u] for u in range(s,  delta)) #inv inicial
+    #                    + quicksum(W[f, t, s] for t in range(max(1, s-delta+1), s + 1)) #produccion
+    #                    == (alfa[f][s] - beta[f][s]*P[f, s]) + L[f, s] for f in F for s in T) #demanda + merma
 
     # R6) Relacion entre merma y asignacion, desde período delta
     MVPFCF.addConstrs(W[f, s - delta + 1, s] # produccion que vence en s y es asignada a s
@@ -212,18 +205,17 @@ def model_2(
     MVPFCF.addConstrs(W0[f, t, s] >= 0 for f,t,s in inv_inicial_sets)
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
-    #B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
-    #M = 1e9
-    
-    #MVPFCF.addConstrs(
-    #    M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
-    #)
+    B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
+    M = 1e9
 
-    #MVPFCF.addConstrs(
-    #    B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
-    #)
-    
-    
+    MVPFCF.addConstrs(
+        M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
+    )
+    MVPFCF.addConstrs(
+        B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
+    )
+
+
     ##################################### CASE 1 ##############################################
     # Case 1: , pero sigue siendo una variable.
     if case == 1:
@@ -239,6 +231,7 @@ def model_2(
         quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
         quicksum(c_merma[f][t] * L[f, t] for f in F for t in T) - \
         quicksum(c[k] * X[k, t] for k in K for t in T)
+
        
     MVPFCF.setObjective(obj_v1, GRB.MAXIMIZE)
 
@@ -246,6 +239,8 @@ def model_2(
     MVPFCF.update()
     #MVPFCF.write("modelo.lp")
     MVPFCF.optimize()
+    MVPFCF.update()
+
 
 
     if save:
@@ -327,36 +322,53 @@ def model_2(
             produccion_w = produccion_w.rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
 
 
-            return inventario, demanda, demanda_alfa_beta, precio, merma, produccion_w, X
+            return inventario, demanda, demanda_alfa_beta, precio, merma, produccion_w, X, L
 
 
         if iterate:
             X, P, L, W_ = get_all_vars_dict([X, P, L, W])
-            demands = {(f,t): alfa[f][t] - beta[f][t]*P[f, t] for f in F for t in T}
-            production = {(f,t): sum([a[f][k]*X[k, t] for k in K]) for f in F for t in T}
-            pattern_use = {(k,t): X[k, t] for k in K for t in T}
-            price = {(f,t): P[f, t] for f in F for t in T}
+            opti_demanda = {(f,t): alfa[f][t] - beta[f][t]*P[f, t] for f in F for t in T}
+            opti_produccion = {(f,t): sum([a[f][k]*X[k, t] for k in K]) for f in F for t in T}
+            opti_patrones = {(k,t): X[k, t] for k in K for t in T}
+            opti_precio = {(f,t): P[f, t] for f in F for t in T}
             
             # Obtencion de la demanda, el inventario y la produccion
             demanda = pd.DataFrame([(*key, value) for (key, value) in alpha_beta_to_d(W, W0, L, T, F, delta).items()]).rename(columns={0: 'f', 1: 't', 2: 'delta', 3: 'value'})
-            demanda = demanda.rename(columns={0: 'f', 1: 't', 2: 'delta', 3: 'value'})
+            demanda = demanda.rename(columns={0: 'f', 1: 't', 2: 'u', 3: 'value'})
             demanda = demanda.groupby(['f', 't']).sum().reset_index()[['f', 't', 'value']]
-            demanda = demanda.set_index(['f', 't']).to_dict()['value']
+            demanda = demanda.set_index(['f', 't'])
 
-            inventario =  pd.DataFrame([(*key, value) for (key, value) in w_to_s(W, W0, T, F, delta).items()])
-            inventario = inventario.rename(columns={0: 'f', 1: 't', 2: 'delta', 3: 'value'})
-            inventario = inventario.groupby(['f', 't']).sum().reset_index()[['f', 't', 'value']]
-            inventario = inventario.set_index(['f', 't']).to_dict()['value']
+            opti_demanda_perecible = pd.DataFrame([(*key, value) for (key, value) in alpha_beta_to_d(W, W0, L, T, F, delta).items()]).rename(columns={0: 'f', 1: 't', 2: 'u', 3: 'value'})
+            opti_demanda_perecible = opti_demanda_perecible.set_index(['f', 't', 'u'])
 
-            produccion_w = pd.DataFrame([(*key, value) for (key, value) in W_.items()]).rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
-            produccion_w = produccion_w.rename(columns={0: 'f', 1: 't', 2: 's', 3: 'value'})
+            opti_inv_final =  pd.DataFrame([(*key, value) for (key, value) in w_to_s(W, W0, T, F, delta).items()])
+            opti_inv_final = opti_inv_final.rename(columns={0: 'f', 1: 't', 2: 'u', 3: 'value'})
+            opti_inv_final = opti_inv_final.set_index(['f', 't', 'u'])
+    
+            opti_merma = {(f,t): L[f, t] for f in F for t in T}
+            opti_merma = pd.DataFrame([(*key, value) for (key, value) in opti_merma.items()]).rename(columns={0: 'f', 1: 't', 2: 'value'})
+            opti_merma = opti_merma.set_index(['f', 't'])
 
-            produccion_w.to_excel('produccion_w.xlsx')
+            opti_inv_inicial =  pd.DataFrame([(*key, value) for (key, value) in w_to_s(W, W0, T, F, delta).items()])
+            opti_inv_inicial = opti_inv_inicial.rename(columns={0: 'f', 1: 't', 2: 'u', 3: 'value'})
+            opti_inv_inicial.t += 1
+            for f in F:
+                for u in range(1, delta):
+                    opti_inv_inicial = opti_inv_inicial.append({'f': f, 't':1, 'u':u, 'value': S0[f][u]}, ignore_index=True)
+            opti_inv_inicial = opti_inv_inicial.set_index(['f', 't', 'u'])
 
-            #produccion_w = produccion_w.set_index(['f', 't', 's']).to_dict()['value']
-            # Obtencion de la demanda, el inventario y la produccion
+            # Guardar en Excel para analizar
+            opti_inv_inicial.to_excel('inv_inicial.xlsx')
+            opti_inv_final.to_excel('inv_final.xlsx')
 
-            return demands, production, price, pattern_use, MVPFCF.objVal, MVPFCF.Runtime, inventario, demanda, produccion_w
+            # Transformar DF a diccionario
+            demanda = demanda.to_dict()['value']
+            opti_inv_inicial = opti_inv_inicial.to_dict()['value']
+            opti_inv_final = opti_inv_final.to_dict()['value']
+            opti_merma = opti_merma.to_dict()['value']
+            opti_demanda_perecible = opti_demanda_perecible.to_dict()['value']
+
+            return opti_produccion, opti_precio, opti_patrones, opti_inv_final, opti_demanda, opti_merma, opti_inv_inicial, opti_demanda_perecible
 
 
         else:

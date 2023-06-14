@@ -3,7 +3,7 @@ def logger_inventario_inicial(archi1, f, t, r, delta, S_inicial, S0, prod):
     archi1.write(f"(Inv inicial) Simulacion: {S_inicial[f, t, r]}\n")
     archi1.write("\n****** Detalle de inventario: *******\n")
     for u in range(1, delta+1):
-        archi1.write(f"Inventario venta en {u}: {S0[f][u]}\n")
+        archi1.write(f"Inventario en {t} que vence en {t+u-1}: {S0[f][u]}\n")
     archi1.write("****** Fin Detalle de inventario: *******\n\n")
     archi1.write("\n****** Detalle de Produccion: *******\n")
     archi1.write(f"(Produccion) Simulacion: {prod[f,t,r]}\n")

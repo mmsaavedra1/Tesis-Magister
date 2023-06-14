@@ -10,6 +10,7 @@ import pandas as pd
 # Parameters of system
 warnings.filterwarnings("ignore")
 from M2 import *
+from M1 import *
 from nuevas_funciones import *
 
 # Decorador para medir tiempo de ejecución
@@ -30,7 +31,7 @@ periods = 30 # Horizonte temporal.  Si es None, por default es 90.
 save = False # Decision si guardar output de modelo.
 model_name = "M2"  # Nombre del modelo
 model = model_2 # Mdelo obtenido del dict
-case = 0 # Caso de estudio
+case = 1 # Caso de estudio
 
 # 2º Archivos de input del modelo
 filename = "Constante"  
@@ -55,6 +56,7 @@ exp_mults = {"Q": q_mults, "Alfa": b_mults, "Beta": b_mults, "Res": c_mults, "S0
 # Ejecutar modelo - Pruebas de funcionalidad del modelo
 @timeit
 def main():
+    """
     return model_2(
         string_input=filename,
         mip_gap=mip_gap,
@@ -66,6 +68,19 @@ def main():
         save=True, 
         loggin=1,
         delta_=9)
+    """
+
+    return model_1(
+        string_input=filename,
+        mip_gap=mip_gap,
+        time_limit=time_limit,
+        periods=periods,
+        scaler=scaler,
+        case=case,
+        iterate=False,
+        loggin=1,
+        delta_=9
+    )
 
 main()
 pickle_to_excel(filename, 0, model_name)

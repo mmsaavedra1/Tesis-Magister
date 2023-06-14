@@ -9,7 +9,7 @@ import collections, functools, operator
 from env import *
 
 from M2 import *
-from simulacion import *
+from simulacion_model_2 import *
 
 # Parameters of system
 warnings.filterwarnings("ignore")
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     simulation_5 = Simulation(
         model=MODEL, filename=filename, mip_gap=mip_gap, time_limit=time_limit,
         scaler=scaler, periods=periods, delta=delta, times=times, replics=replics,
-        case=case_politica_2, it_case=5, remaining_days=remaining_days, error_dda=ERROR_DDA, _print=True, n_escenario=5)
+        case=case_politica_2, it_case=5, remaining_days=remaining_days, error_dda=ERROR_DDA, _print=LOGGER, n_escenario=5)
 
     # Correr todas las simulaciones
     simulation_5.run_replics()

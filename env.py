@@ -10,7 +10,8 @@ DELTA = 9
 REPLICS = 1
 MODEL = model_2
 PERIODS=30
-TIMES=30
+TIMES=150
+LOGGER=True
 
 import json
 import random

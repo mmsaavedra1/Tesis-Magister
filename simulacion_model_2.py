@@ -152,9 +152,8 @@ class Simulation:
                     delta_=self.delta,
                     loggin=0)
                 print("Optimizacion", t)
-                
-            for n in range(self.remaining_days):
-                if t+n <= T[-1]:
+
+                for n in range(self.remaining_days):
                     # 4.3º Guardar los valores en la simulacion
                     for k in K:
                         self.simulacion_X[k, t+n, r] = opti_patron[(k, t_opti[t+n])]
@@ -179,20 +178,19 @@ class Simulation:
                         for u in range(0, delta):
                             self.opti_demanda_perecible[f, t+n, t+n+u, r] = opti_demanda_perecible[(f, t_opti[t+n], t_opti[t+n]+u)]
 
-                else:
-                    break
-            
+                
              # TERMINAL LOGGER 
-            print()
-            print("*"*120)
-            print(f"Tiempo {t}")
-            print("*"*120)
+            if f in ['Entero'] and self._print:
+                print()
+                print("*"*120)
+                print(f"Tiempo {t}")
+                print("*"*120)
 
             # 4.5º Actualizar sistema
             for f in F:
         
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
-                if f in ['Entero']:
+                if f in ['Entero'] and self._print:
                     print(f"(S0) Inv para vender en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     inv_inicial_opti = 0
@@ -210,7 +208,7 @@ class Simulation:
 
                 # 4.8º Generar demanda de simulacion
                 D_error = 0
-                #D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2
+                D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2
                 self.simulacion_D_real[f, t, r] = min(alfa[f][1], max(0, (1+D_error)*self.simulacion_D[f, t, r]))
                 
                 # 4.9º Actualizar inventarios segun ventas
@@ -220,7 +218,7 @@ class Simulation:
                 self.simulacion_L[f, t, r] = merma
 
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
-                if f in ['Entero']:
+                if f in ['Entero'] and self._print:
                     print("-"*100)
                     print("                       {:<25} {:<20} {:1} {:<20}".format("Producto", "Simulacion", "-", "Optimizacion"))
                     print("Inv incial (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_S_inicial[f, t, r], "-", inv_inicial_opti))                  # S0 vs W0
@@ -230,15 +228,12 @@ class Simulation:
                     print("-"*100)
                     print()
 
-                if f in ['Entero']:
                     print(f"(D) Venta en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     for u in range(0, delta):
                         print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, self.simulacion_Sales_perecible[f, t, t+u, r], "-", self.opti_demanda_perecible[f, t, t+u, r]))
                     print()
                 
-
-                if (f in ['Entero']) and (t < self.times):
                     print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     for u in range(1, delta):

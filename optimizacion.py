@@ -31,7 +31,7 @@ periods = 30 # Horizonte temporal.  Si es None, por default es 90.
 save = False # Decision si guardar output de modelo.
 model_name = "M2"  # Nombre del modelo
 model = model_2 # Mdelo obtenido del dict
-case = 1 # Caso de estudio
+case = 0 # Caso de estudio
 
 # 2º Archivos de input del modelo
 filename = "Constante"  
@@ -56,7 +56,7 @@ exp_mults = {"Q": q_mults, "Alfa": b_mults, "Beta": b_mults, "Res": c_mults, "S0
 # Ejecutar modelo - Pruebas de funcionalidad del modelo
 @timeit
 def main():
-    """
+    
     return model_2(
         string_input=filename,
         mip_gap=mip_gap,
@@ -65,11 +65,11 @@ def main():
         scaler=scaler,
         case=case, 
         iterate=False,
-        save=True, 
+        save=False, 
         loggin=1,
         delta_=9)
-    """
 
+    """
     return model_1(
         string_input=filename,
         mip_gap=mip_gap,
@@ -81,6 +81,7 @@ def main():
         loggin=1,
         delta_=9
     )
+    """
 
 main()
 pickle_to_excel(filename, 0, model_name)

@@ -203,6 +203,8 @@ def model_2(
     # R10) No negatividad de asignacion de venta
     MVPFCF.addConstrs(W[f, t, s] >= 0 for f,t,s in asignacion_sets)
     MVPFCF.addConstrs(W0[f, t, s] >= 0 for f,t,s in inv_inicial_sets)
+    MVPFCF.addConstrs(alfa[f][s]-P[f, s]*beta[f][s] >= 0 for f, s  in precios_set)
+
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
     B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')

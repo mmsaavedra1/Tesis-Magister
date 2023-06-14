@@ -105,7 +105,7 @@ class Simulation:
             subtract = min([inv, demand])
             S0[f][i] -= subtract
             demand -= subtract
-            self.simulacion_Sales_perecible[f, t, t+i-1, r] = subtract  # Almacenar demanda
+            #self.simulacion_Sales_perecible[f, t, t+i-1, r] = subtract  # Almacenar demanda
             i += 1
         merma = S0[f][1]
 
@@ -180,7 +180,7 @@ class Simulation:
 
                 
              # TERMINAL LOGGER 
-            if f in ['Entero'] and self._print:
+            if self._print:
                 print()
                 print("*"*120)
                 print(f"Tiempo {t}")
@@ -208,7 +208,7 @@ class Simulation:
 
                 # 4.8º Generar demanda de simulacion
                 D_error = 0
-                D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2
+                #D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2
                 self.simulacion_D_real[f, t, r] = min(alfa[f][1], max(0, (1+D_error)*self.simulacion_D[f, t, r]))
                 
                 # 4.9º Actualizar inventarios segun ventas
@@ -228,12 +228,6 @@ class Simulation:
                     print("-"*100)
                     print()
 
-                    print(f"(D) Venta en {t} que vence hasta {t+delta-1}")
-                    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
-                    for u in range(0, delta):
-                        print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, self.simulacion_Sales_perecible[f, t, t+u, r], "-", self.opti_demanda_perecible[f, t, t+u, r]))
-                    print()
-                
                     print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     for u in range(1, delta):

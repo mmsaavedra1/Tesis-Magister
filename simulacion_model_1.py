@@ -15,9 +15,6 @@ from logger_simulacion import *
 warnings.filterwarnings("ignore")
 
 
-
-
-
 # Decorador para medir tiempo de ejecución
 def timeit(func):
     def timeit_wrapper(*args, **kwargs):
@@ -105,7 +102,7 @@ class Simulation:
             subtract = min([inv, demand])
             S0[f][i] -= subtract
             demand -= subtract
-            #self.simulacion_Sales_perecible[f, t, t+i-1, r] = subtract  # Almacenar demanda
+            self.simulacion_Sales_perecible[f, t, t+i-1, r] = subtract  # Almacenar demanda
             i += 1
         merma = S0[f][1]
 
@@ -151,7 +148,8 @@ class Simulation:
                     save=False, 
                     delta_=self.delta,
                     loggin=0)
-                print("Optimizacion", t)
+        
+                print("Modelo 1-Optimizacion", t)
 
                 for n in range(self.remaining_days):
                     # 4.3º Guardar los valores en la simulacion
@@ -226,6 +224,12 @@ class Simulation:
                     print("Producc    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_Prod[f, t, r], "-", self.opti_produccion[f, t, r]))          # prod_sim vs prod_opti (∑ax)
                     print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, t, r]))                  # L_sim vs L_opti
                     print("-"*100)
+                    print()
+
+                    print(f"(D) Venta en {t} que vence hasta {t+delta-1}")
+                    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
+                    for u in range(1, delta):
+                        print("D {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, self.simulacion_Sales_perecible[f, t, t+u, r], "-",self.opti_demanda_perecible[f, t, t+u, r]))
                     print()
 
                     print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")

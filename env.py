@@ -8,9 +8,9 @@ MIP_GAP = 0.05
 TIME_LIMIT = 99999
 DELTA = 9
 REPLICS = 1
-MODEL = model_2
+MODEL = model_1
 PERIODS=30
-TIMES=150
+TIMES=60
 LOGGER=True
 
 import json

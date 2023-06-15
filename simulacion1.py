@@ -10,7 +10,7 @@ from env import *
 
 from M2 import *
 #from simulacion import *
-from simulacion_model_2 import *
+from simulacion_model_1 import *
 
 # Parameters of system
 warnings.filterwarnings("ignore")

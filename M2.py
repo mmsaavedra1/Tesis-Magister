@@ -206,16 +206,15 @@ def model_2(
 
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
-    #B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
-    #M = 1e9
+    B = MVPFCF.addVars(inv_inicial_sets, vtype=GRB.BINARY, name = 'BINARIA1')
+    M = 1e9
 
-    #MVPFCF.addConstrs(
-    #    M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
-    #)
-    #MVPFCF.addConstrs(
-    #    B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
-    #)
-
+    MVPFCF.addConstrs(
+        M*B[f, s, u] >= W0[f, s, u] for f, s, u in inv_inicial_sets
+    )
+    MVPFCF.addConstrs(
+        B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
+    )
 
     ##################################### CASE 1 ##############################################
     # Case 1: , pero sigue siendo una variable.

@@ -130,8 +130,19 @@ def model_1(string_input, mip_gap, time_limit, scaler, periods=None, case=0, ite
     W0 = MVTPI.addVars(inventario_incial_set, vtype=GRB.CONTINUOUS, lb=0,  name = 's')
     MVTPI.addConstrs(W0[f, 1, u] == S0[f][u] for u in range(1, delta) for f in F)
     MVTPI.addConstrs(W0[f, t+1, u] == S[f, t, u] for f in F for t in T[:-1] for u in range(t+1, t+delta) )
-    MVTPI.addConstrs(W0[f, t+1, u] <= W0[f, t, u] for f in F for t in T[:-1] for u in range(t+1, t+delta))
 
+    # R11) Generar FIFO para asignacion de venta de inventario inicial
+    B = MVTPI.addVars(inventario_incial_set, vtype=GRB.BINARY, name = 'BINARIA1')
+    M = 1e9
+    MVTPI.addConstrs(
+        W0[f, t, u] - D[f, t, u] <= M*B[f, t, u] for f in F for t in T for u in range(t, t+delta)
+    )
+    MVTPI.addConstrs(
+        quicksum(a[f][k]*X[k, t] for k in K) - D[f, t, t+delta-1] <= M*B[f, t, t+delta-1] for f in F for t in T 
+    )
+    MVTPI.addConstrs(
+        M*(1-B[f, t, u]) <= D[f, t, u+1] for f in F for t in T for u in range(t, t+delta-1)
+    )
 
     ##################################### CASE 1 ##############################################
     # Case 1: , pero sigue siendo una variable.
@@ -142,7 +153,7 @@ def model_1(string_input, mip_gap, time_limit, scaler, periods=None, case=0, ite
     MVTPI.update()
     MVTPI.optimize()
     
-    status, opt_value = MVTPI.Status, MVTPI.objVal
+    #status, opt_value = MVTPI.Status, MVTPI.objVal
 
 
     if iterate:

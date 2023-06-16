@@ -4,13 +4,13 @@ from M2 import model_2
 
 FILENAME = "Constante"
 SCALER = 1
-MIP_GAP = 0.05
+MIP_GAP = 0.0001
 TIME_LIMIT = 99999
 DELTA = 9
 REPLICS = 1
-MODEL = model_1
+MODEL = model_2
 PERIODS=30
-TIMES=60
+TIMES=150
 LOGGER=True
 
 import json

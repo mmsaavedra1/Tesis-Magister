@@ -228,8 +228,8 @@ class Simulation:
 
                     print(f"(D) Venta en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
-                    for u in range(1, delta):
-                        print("D {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, self.simulacion_Sales_perecible[f, t, t+u, r], "-",self.opti_demanda_perecible[f, t, t+u, r]))
+                    for u in range(0, delta):
+                        print("D {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, self.simulacion_Sales_perecible[f, t, t+u, r], "-", self.opti_demanda_perecible[f, t, t+u, r]))
                     print()
 
                     print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")

@@ -779,7 +779,6 @@ def w_to_s(W, W0, T, F, delta):
                 val = W0[f, s, u].X
                 for n in range(1, s):
                     S[f, n, u] += val
-
     return S
 
 

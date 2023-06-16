@@ -56,7 +56,7 @@ exp_mults = {"Q": q_mults, "Alfa": b_mults, "Beta": b_mults, "Res": c_mults, "S0
 # Ejecutar modelo - Pruebas de funcionalidad del modelo
 @timeit
 def main():
-    """
+    
     return model_2(
         string_input=filename,
         mip_gap=mip_gap,
@@ -68,8 +68,9 @@ def main():
         save=False, 
         loggin=1,
         delta_=9)
-    """
     
+    
+    """
     return model_1(
         string_input=filename,
         mip_gap=mip_gap,
@@ -81,6 +82,7 @@ def main():
         loggin=1,
         delta_=9
     )
+    """
     
 
 main()

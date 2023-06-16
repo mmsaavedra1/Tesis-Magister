@@ -202,7 +202,6 @@ def model_2(
     # R10) No negatividad de asignacion de venta
     MVPFCF.addConstrs(W[f, t, s] >= 0 for f,t,s in asignacion_sets)
     MVPFCF.addConstrs(W0[f, t, s] >= 0 for f,t,s in inv_inicial_sets)
-    MVPFCF.addConstrs(alfa[f][s]-P[f, s]*beta[f][s] >= 0 for f, s  in precios_set)
 
 
     # R11) Generar FIFO para asignacion de venta de inventario inicial
@@ -215,6 +214,9 @@ def model_2(
     MVPFCF.addConstrs(
         B[f, s, u] + B[f, s_hat, u_hat] <= 1 for f, s, u in inv_inicial_sets for _, s_hat, u_hat in inv_inicial_sets if (u > u_hat) and (s < s_hat)
     )
+    #MVPFCF.addConstrs(
+    #    W[f, t-1, s] >= W[f, t, s] for f in F for s in T for t in range(max(2, s-delta+2), s+1)
+    #)
 
     ##################################### CASE 1 ##############################################
     # Case 1: , pero sigue siendo una variable.
@@ -232,6 +234,14 @@ def model_2(
         quicksum(c_merma[f][t] * L[f, t] for f in F for t in T) - \
         quicksum(c[k] * X[k, t] for k in K for t in T)
 
+    #obj_v1 = quicksum(P[f, s]*(alfa[f][s] - beta[f][s] * P[f, s]) for f in F for s in T) - \
+    #    quicksum(h_acum[f][t][s]*W[f, t, s] for f in F for t in T for s in range(t + 1, min(last_t + 2, t + delta))) - \
+    #    quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
+    #    quicksum(c_merma[f][t] * L[f, t] for f in F for t in T) - \
+    #    quicksum(c[k] * X[k, t] for k in K for t in T) +\
+    #    quicksum(20*W[f, T[-1], s] for f in F for s in range(last_t+1, last_t+2))
+
+
        
     MVPFCF.setObjective(obj_v1, GRB.MAXIMIZE)
 
@@ -242,6 +252,7 @@ def model_2(
     MVPFCF.update()
 
 
+    print(MVPFCF.MIPGap)
 
     if save:
         print("Saved!")

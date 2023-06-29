@@ -230,7 +230,7 @@ def model_2(
     # Maximizar beneficio operacional (venta - costo de inventario - costo de producción)
     #ORIGINAL
     if valores_residuales == None:
-        print("Optimizar normal")
+        print("Optimizar SIN valores residuales")
         obj_v1 = quicksum(P[f, s]*(alfa[f][s] - beta[f][s] * P[f, s]) for f in F for s in T) - \
             quicksum(h_acum[f][t][s]*W[f, t, s] for f in F for t in T for s in range(t + 1, min(last_t + 2, t + delta))) - \
             quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
@@ -238,21 +238,20 @@ def model_2(
             quicksum(c[k] * X[k, t] for k in K for t in T)
     
     else:
-        print("Optimizar valores residuales")
+        print("Optimizar CON valores residuales")
         obj_v1 = quicksum(P[f, s]*(alfa[f][s] - beta[f][s] * P[f, s]) for f in F for s in T) - \
             quicksum(h_acum[f][t][s]*W[f, t, s] for f in F for t in T for s in range(t + 1, min(last_t + 2, t + delta))) - \
             quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
             quicksum(c_merma[f][t] * L[f, t] for f in F for t in T) - \
             quicksum(c[k] * X[k, t] for k in K for t in T) +\
-            quicksum(valores_residuales[f]*W[f, T[-1], s] for f in F for s in range(last_t+1, last_t+2))
-
-
+            quicksum(valores_residuales[f]*quicksum(W[f, t, T[-1]+1] for t in range(max(1, T[-1]-delta+2), T[-1]+1)) for f in F)
+    
        
     MVPFCF.setObjective(obj_v1, GRB.MAXIMIZE)
 
     # 6º Optimizar el modelo
     MVPFCF.update()
-    #MVPFCF.write("modelo.lp")
+    MVPFCF.write("modelo.lp")
     MVPFCF.optimize()
     MVPFCF.update()
 

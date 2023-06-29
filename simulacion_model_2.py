@@ -8,6 +8,7 @@ import collections, functools, operator
 
 import pickle
 
+from env import PERIODS
 from M2 import *
 from logger_simulacion import *
 
@@ -125,9 +126,9 @@ class Simulation:
         P = pd.read_excel("~/Desktop/Produccion-Tesis/Resultados/Warmup/P.xlsx")
         P['value'] = P['value']/replicas
         P = P[['f','t','r','value']].groupby(['f','t']).sum().reset_index()[['f','t','value']]
-        P = P[P.t == 30][['f', 'value']]
+        P = P[P.t == PERIODS][['f', 'value']]
         for row, value in P.iterrows():
-                dictionary[value['f']] = value['value']*0.7
+                dictionary[value['f']] = value['value']*0.4
         return dictionary
 
 
@@ -152,7 +153,9 @@ class Simulation:
         # 1º Determinar si es warm up
         if not self.warm_up:
             self.valores_residuales = self.generador_valores_residuales()
-            S0 = self.generador_inventarios_iniciales(F)  
+            S0 = self.generador_inventarios_iniciales(F) 
+        else:
+            self.valores_residuales = None 
 
         # 2º Manejo de tiempo entre Simulacion|Optimizacion
         t_opti = {}
@@ -162,6 +165,7 @@ class Simulation:
             t_valor += 1
             if t_valor == self.remaining_days:
                 t_valor = 0
+        n_opti = 1
         
         # 4º Simulacion
         for t in range(1, self.times + 1):
@@ -195,20 +199,22 @@ class Simulation:
                         self.simulacion_D[f, t+n, r] = alfa[f][t_opti[t+n]]-(beta[f][t_opti[t+n]]*self.simulacion_P[f, t+n, r])
 
                     # 4.4º Guarda los valores de la optimizacion
+                for n in range(0, self.simulacion_Periods):
                     for k in K:
-                        self.opti_patron[k, t+n, r] = opti_patron[(k, t_opti[t+n])]
+                        self.opti_patron[k, n_opti, t+n, r] = opti_patron[(k, t_opti[t+n])]
                     for f in F:
-                        self.opti_produccion[f, t+n, r] = opti_produccion[(f, t_opti[t+n])]
-                        self.opti_precio[f, t+n, r] = opti_precio[(f, t_opti[t+n])]
-                        self.opti_demanda[f, t+n, r] = opti_demanda[(f, t_opti[t+n])]
-                        self.opti_merma[f, t+n, r] = opti_merma[(f, t_opti[t+n])]
+                        self.opti_produccion[f, n_opti, t+n, r] = opti_produccion[(f, t_opti[t+n])]
+                        self.opti_precio[f, n_opti, t+n, r] = opti_precio[(f, t_opti[t+n])]
+                        self.opti_demanda[f, n_opti, t+n, r] = opti_demanda[(f, t_opti[t+n])]
+                        self.opti_merma[f, n_opti, t+n, r] = opti_merma[(f, t_opti[t+n])]
                         for u in range(delta-1):
-                            self.opti_inventario_inicial[f, t+n, t+n+u, r] = opti_inv_inicial[(f, t_opti[t+n], t_opti[t+n]+u)]
+                            self.opti_inventario_inicial[f, n_opti, t+n, t+n+u, r] = opti_inv_inicial[(f, t_opti[t+n], t_opti[t+n]+u)]
                         for u in range(1, delta):
-                            self.opti_inventario_final[f, t+n, t+n+u, r] = opti_inv_final[(f, t_opti[t+n], t_opti[t+n]+u)]
+                            self.opti_inventario_final[f, n_opti, t+n, t+n+u, r] = opti_inv_final[(f, t_opti[t+n], t_opti[t+n]+u)]
                         for u in range(0, delta):
-                            self.opti_demanda_perecible[f, t+n, t+n+u, r] = opti_demanda_perecible[(f, t_opti[t+n], t_opti[t+n]+u)]
-
+                            self.opti_demanda_perecible[f, n_opti, t+n, t+n+u, r] = opti_demanda_perecible[(f, t_opti[t+n], t_opti[t+n]+u)]
+                
+                n_opti += 1
                 
              # TERMINAL LOGGER 
             if self._print:
@@ -226,8 +232,8 @@ class Simulation:
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     inv_inicial_opti = 0
                     for u in range(0, delta-1):
-                        inv_inicial_opti += self.opti_inventario_inicial[f, t, t+u, r]
-                        print("S0 {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u+1], "-", self.opti_inventario_inicial[f, t, t+u, r]))
+                        inv_inicial_opti += self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]
+                        print("S0 {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u+1], "-", self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]))
                     print()
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
 
@@ -257,9 +263,9 @@ class Simulation:
                     print("-"*100)
                     print("                       {:<25} {:<20} {:1} {:<20}".format("Producto", "Simulacion", "-", "Optimizacion"))
                     print("Inv incial (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_S_inicial[f, t, r], "-", inv_inicial_opti))                  # S0 vs W0
-                    print("Demanda    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_D_real[f, t, r], "-", self.opti_demanda[f, t, r]))           # D_sim vs D_opti (alfa-beta*P)
-                    print("Producc    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_Prod[f, t, r], "-", self.opti_produccion[f, t, r]))          # prod_sim vs prod_opti (∑ax)
-                    print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, t, r]))                  # L_sim vs L_opti
+                    print("Demanda    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_D_real[f, t, r], "-", self.opti_demanda[f, n_opti-1, t, r]))           # D_sim vs D_opti (alfa-beta*P)
+                    print("Producc    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_Prod[f, t, r], "-", self.opti_produccion[f, n_opti-1, t, r]))          # prod_sim vs prod_opti (∑ax)
+                    print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, n_opti-1, t, r]))                  # L_sim vs L_opti
                     print("-"*100)
                     print()
 
@@ -267,7 +273,7 @@ class Simulation:
                     print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
                     print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                     for u in range(1, delta):
-                        print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u], "-",self.opti_inventario_final[f, t, t+u, r]))
+                        print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u], "-",self.opti_inventario_final[f, n_opti-1, t, t+u, r]))
                     print()
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
 
@@ -320,6 +326,18 @@ class Simulation:
             pd.Series(self.simulacion_Sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"Sales.xlsx", engine='openpyxl')
             pd.Series(self.simulacion_Prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod.xlsx", engine='openpyxl')
             
+            # Guardar variables de optimizacion
+            #self.opti_patron = {}
+            #self.opti_inventario_inicial = {}
+            #self.opti_inventario_final = {}
+            #self.opti_merma = {}
+            #self.opti_demanda_perecible = {}
+
+            pd.Series(self.opti_produccion).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod_opti.xlsx", engine='openpyxl')
+            pd.Series(self.opti_precio).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"P_opti.xlsx", engine='openpyxl')
+            pd.Series(self.opti_demanda).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"D_opti.xlsx", engine='openpyxl')
+            pd.Series(self.opti_inventario_final).rename_axis(['f', 'n', 't', 'u', 'r']).reset_index(name='value').to_excel(directorio+"S_opti.xlsx", engine='openpyxl')
+
             # Guardar metricas de simulacion
             pd.Series(self.objective_value).rename_axis(['t', 'r']).reset_index(name='value').to_excel(directorio+"objective_value.xlsx", engine='openpyxl')
             pd.Series(self.ingresos).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"ingresos.xlsx", engine='openpyxl')

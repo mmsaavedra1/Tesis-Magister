@@ -29,7 +29,7 @@ if __name__ == "__main__":
     replics = REPLICS                         # r
 
     # Escenario_6
-    remaining_days = 1  # t2
+    remaining_days = 7  # t2
     periods = PERIODS        # t3
     times = TIMES         # t4
     simulation_6 = Simulation(

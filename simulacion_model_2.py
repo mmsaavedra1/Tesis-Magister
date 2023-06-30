@@ -121,9 +121,9 @@ class Simulation:
         return demand, merma, S0
 
 
-    def generador_valores_residuales(self, replicas=50):
+    def generador_valores_residuales(self, q, replicas=50):
         dictionary = {}
-        P = pd.read_excel("~/Desktop/Produccion-Tesis/Resultados/Warmup/P.xlsx")
+        P = pd.read_excel(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/P.xlsx")
         P['value'] = P['value']/replicas
         P = P[['f','t','r','value']].groupby(['f','t']).sum().reset_index()[['f','t','value']]
         P = P[P.t == PERIODS][['f', 'value']]
@@ -132,9 +132,9 @@ class Simulation:
         return dictionary
 
 
-    def generador_inventarios_iniciales(self, F, replicas=50):
+    def generador_inventarios_iniciales(self, F, q, replicas=50):
         dictionary = {f: {self.delta: 0, self.delta+1: 0} for f in F}
-        S0 = pd.read_excel("~/Desktop/Produccion-Tesis/Resultados/Warmup/S0.xlsx").reset_index()
+        S0 = pd.read_excel(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/S0.xlsx").reset_index()
         S0['value'] = S0['value']/replicas
         S0 = S0[['f','u','r','value']].groupby(['f','u']).sum().reset_index()[['f','u','value']]
         for _, value in S0.iterrows():
@@ -152,8 +152,8 @@ class Simulation:
 
         # 1º Determinar si es warm up
         if not self.warm_up:
-            self.valores_residuales = self.generador_valores_residuales()
-            S0 = self.generador_inventarios_iniciales(F) 
+            self.valores_residuales = self.generador_valores_residuales(q[0])
+            S0 = self.generador_inventarios_iniciales(F, q[0]) 
         else:
             self.valores_residuales = None 
 
@@ -308,13 +308,16 @@ class Simulation:
 
 
     def save_to_pickle(self, n_escenario):
+        F, T, T_delta, T_0, T_0_delta, K, alfa, beta, delta, S0, a, h, c, q, c_merma, p_constante, p_compat, v_constante = self.get_parameters()
+        q = q[0]
+
         if self.warm_up:
-            directorio = f"~/Desktop/Produccion-Tesis/Resultados/Warmup/"
+            directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/"
             pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"P.xlsx", engine='openpyxl')
             pd.Series(self.simulacion_S0).rename_axis(['f', 'u', 'r']).reset_index(name='value').to_excel(directorio+"S0.xlsx", engine='openpyxl')
 
         else:
-            directorio = f"~/Desktop/Produccion-Tesis/Resultados/Escenario {n_escenario}/"
+            directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Escenario {n_escenario}/"
             # Guardar variables de simulacion
             pd.Series(self.simulacion_X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_excel(directorio+"X.xlsx", engine='openpyxl')
             pd.Series(self.simulacion_S_final).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"S.xlsx", engine='openpyxl')
@@ -327,12 +330,6 @@ class Simulation:
             pd.Series(self.simulacion_Prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod.xlsx", engine='openpyxl')
             
             # Guardar variables de optimizacion
-            #self.opti_patron = {}
-            #self.opti_inventario_inicial = {}
-            #self.opti_inventario_final = {}
-            #self.opti_merma = {}
-            #self.opti_demanda_perecible = {}
-
             pd.Series(self.opti_produccion).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod_opti.xlsx", engine='openpyxl')
             pd.Series(self.opti_precio).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"P_opti.xlsx", engine='openpyxl')
             pd.Series(self.opti_demanda).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"D_opti.xlsx", engine='openpyxl')

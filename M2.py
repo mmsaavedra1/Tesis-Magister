@@ -135,6 +135,8 @@ def model_2(
     inv_inicial_sets = W0_sets(F, delta)
     inventario_set = P_sets(F, T)
 
+    print(f"q={q[1]}")
+
     # 3º Creacion de variables del modelo
     #Cantidad de cortes con patrón K en T en piezas de pollo (NO cajas) (solo períodos en los que se produce/vende)
     #Y = MVPFCF.addVars(produccion_set, vtype=GRB.INTEGER, lb=0,  name = 'y')
@@ -255,9 +257,6 @@ def model_2(
     MVPFCF.optimize()
     MVPFCF.update()
 
-
-    print(MVPFCF.MIPGap)
-
     if save:
         print("Saved!")
         some_vars = [X, P, L]
@@ -373,8 +372,8 @@ def model_2(
             opti_inv_inicial = opti_inv_inicial.set_index(['f', 't', 'u'])
 
             # Guardar en Excel para analizar
-            opti_inv_inicial.to_excel('inv_inicial.xlsx')
-            opti_inv_final.to_excel('inv_final.xlsx')
+            #opti_inv_inicial.to_excel('inv_inicial.xlsx')
+            #opti_inv_final.to_excel('inv_final.xlsx')
 
             # Transformar DF a diccionario
             demanda = demanda.to_dict()['value']

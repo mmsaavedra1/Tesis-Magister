@@ -35,7 +35,8 @@ if __name__ == "__main__":
     simulation_5 = Simulation(
         model=MODEL, filename=filename, mip_gap=mip_gap, time_limit=time_limit,
         scaler=scaler, periods=periods, delta=delta, times=times, replics=replics,
-        case=case_politica_2, it_case=5, remaining_days=remaining_days, error_dda=ERROR_DDA, _print=LOGGER, n_escenario=5, determinista=DETERMINISTA)
+        case=case_politica_2, remaining_days=remaining_days, error_dda=ERROR_DDA,
+        _print=LOGGER, n_escenario=5, determinista=DETERMINISTA)
 
     # Correr todas las simulaciones
     simulation_5.run_replics()

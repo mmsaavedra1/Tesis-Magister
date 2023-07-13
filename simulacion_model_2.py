@@ -32,7 +32,7 @@ def timeit(func):
 class Simulation:
     def __init__(self, model, filename, mip_gap,
                 time_limit, scaler, periods, case, delta,
-                times, it_case, replics, remaining_days, 
+                times, replics, remaining_days, 
                 error_dda, _print=True, n_escenario=None, 
                 determinista=True, warm_up=False):
 
@@ -45,7 +45,6 @@ class Simulation:
         self.case = case
         self.delta = delta
         self.times = times
-        self.it_case = it_case
         self.replics = replics
         self.remaining_days = remaining_days
         self.error_dda = error_dda    
@@ -123,7 +122,7 @@ class Simulation:
 
     def generador_valores_residuales(self, q, replicas=50):
         dictionary = {}
-        P = pd.read_excel(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/P.xlsx")
+        P = pd.read_csv(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/P.csv", sep=';')
         P['value'] = P['value']/replicas
         P = P[['f','t','r','value']].groupby(['f','t']).sum().reset_index()[['f','t','value']]
         P = P[P.t == PERIODS][['f', 'value']]
@@ -134,7 +133,7 @@ class Simulation:
 
     def generador_inventarios_iniciales(self, F, q, replicas=50):
         dictionary = {f: {self.delta: 0, self.delta+1: 0} for f in F}
-        S0 = pd.read_excel(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/S0.xlsx").reset_index()
+        S0 = pd.read_csv(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/S0.csv", sep=';').reset_index()
         S0['value'] = S0['value']/replicas
         S0 = S0[['f','u','r','value']].groupby(['f','u']).sum().reset_index()[['f','u','value']]
         for _, value in S0.iterrows():
@@ -152,8 +151,8 @@ class Simulation:
 
         # 1º Determinar si es warm up
         if not self.warm_up:
-            self.valores_residuales = self.generador_valores_residuales(q[0])
-            S0 = self.generador_inventarios_iniciales(F, q[0]) 
+            self.valores_residuales = self.generador_valores_residuales(int(q[1]))
+            S0 = self.generador_inventarios_iniciales(F, int(q[1])) 
         else:
             self.valores_residuales = None 
 
@@ -183,12 +182,12 @@ class Simulation:
                     init_S0=S0,
                     save=False, 
                     delta_=self.delta,
-                    loggin=1,
+                    loggin=0,
                     valores_residuales=self.valores_residuales
                     )
                 print("Optimizacion", t)
 
-                for n in range(self.remaining_days):
+                for n in range(self.simulacion_Periods):
                     # 4.3º Guardar los valores en la simulacion
                     for k in K:
                         self.simulacion_X[k, t+n, r] = opti_patron[(k, t_opti[t+n])]
@@ -199,42 +198,42 @@ class Simulation:
                         self.simulacion_D[f, t+n, r] = alfa[f][t_opti[t+n]]-(beta[f][t_opti[t+n]]*self.simulacion_P[f, t+n, r])
 
                     # 4.4º Guarda los valores de la optimizacion
-                for n in range(0, self.simulacion_Periods):
+                for n in range(self.simulacion_Periods):
                     for k in K:
-                        self.opti_patron[k, n_opti, t+n, r] = opti_patron[(k, t_opti[t+n])]
+                        self.opti_patron[k, n_opti, t+n, r] = opti_patron[(k, n+1)]
                     for f in F:
-                        self.opti_produccion[f, n_opti, t+n, r] = opti_produccion[(f, t_opti[t+n])]
-                        self.opti_precio[f, n_opti, t+n, r] = opti_precio[(f, t_opti[t+n])]
-                        self.opti_demanda[f, n_opti, t+n, r] = opti_demanda[(f, t_opti[t+n])]
-                        self.opti_merma[f, n_opti, t+n, r] = opti_merma[(f, t_opti[t+n])]
+                        self.opti_produccion[f, n_opti, t+n, r] = opti_produccion[(f, n+1)]
+                        self.opti_precio[f, n_opti, t+n, r] = opti_precio[(f, n+1)]
+                        self.opti_demanda[f, n_opti, t+n, r] = opti_demanda[(f, n+1)]
+                        self.opti_merma[f, n_opti, t+n, r] = opti_merma[(f, n+1)]
                         for u in range(delta-1):
-                            self.opti_inventario_inicial[f, n_opti, t+n, t+n+u, r] = opti_inv_inicial[(f, t_opti[t+n], t_opti[t+n]+u)]
+                            self.opti_inventario_inicial[f, n_opti, t+n, t+n+u, r] = opti_inv_inicial[(f, n+1, n+1+u)]
                         for u in range(1, delta):
-                            self.opti_inventario_final[f, n_opti, t+n, t+n+u, r] = opti_inv_final[(f, t_opti[t+n], t_opti[t+n]+u)]
+                            self.opti_inventario_final[f, n_opti, t+n, t+n+u, r] = opti_inv_final[(f, n+1, n+1+u)]
                         for u in range(0, delta):
-                            self.opti_demanda_perecible[f, n_opti, t+n, t+n+u, r] = opti_demanda_perecible[(f, t_opti[t+n], t_opti[t+n]+u)]
+                            self.opti_demanda_perecible[f, n_opti, t+n, t+n+u, r] = opti_demanda_perecible[(f, n+1, n+1+u)]
                 
                 n_opti += 1
                 
              # TERMINAL LOGGER 
-            if self._print:
-                print()
-                print("*"*120)
-                print(f"Tiempo {t}")
-                print("*"*120)
+            #if self._print:
+            #    print()
+            #    print("*"*120)
+            #    print(f"Tiempo {t}")
+            #    print("*"*120)
 
             # 4.5º Actualizar sistema
             for f in F:
         
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
-                if f in ['Entero'] and self._print:
-                    print(f"(S0) Inv para vender en {t} que vence hasta {t+delta-1}")
-                    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
-                    inv_inicial_opti = 0
-                    for u in range(0, delta-1):
-                        inv_inicial_opti += self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]
-                        print("S0 {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u+1], "-", self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]))
-                    print()
+                #if f in ['Entero'] and self._print:
+                #    print(f"(S0) Inv para vender en {t} que vence hasta {t+delta-1}")
+                #    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
+                #    inv_inicial_opti = 0
+                #    for u in range(0, delta-1):
+                #        inv_inicial_opti += self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]
+                #        print("S0 {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u+1], "-", self.opti_inventario_inicial[f, n_opti-1, t, t+u, r]))
+                #    print()
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
 
                 # 4.6º Inventarios inciales de simulacion
@@ -247,7 +246,7 @@ class Simulation:
                 if self.determinista:   
                     D_error = 0
                 else:
-                    D_error = -0.6 + self.error_dda[str(r)][str(t)][f]*1.2
+                    D_error = -0.4 + self.error_dda[str(r)][str(t)][f]*0.8
                 self.simulacion_D_real[f, t, r] = min(alfa[f][1], max(0, (1+D_error)*self.simulacion_D[f, t, r]))
                 
                 # 4.9º Actualizar inventarios segun ventas
@@ -259,23 +258,23 @@ class Simulation:
                     self.simulacion_S0[f, u, r] = S0[f][u]
 
                 #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
-                if f in ['Entero'] and self._print:
-                    print("-"*100)
-                    print("                       {:<25} {:<20} {:1} {:<20}".format("Producto", "Simulacion", "-", "Optimizacion"))
-                    print("Inv incial (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_S_inicial[f, t, r], "-", inv_inicial_opti))                  # S0 vs W0
-                    print("Demanda    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_D_real[f, t, r], "-", self.opti_demanda[f, n_opti-1, t, r]))           # D_sim vs D_opti (alfa-beta*P)
-                    print("Producc    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_Prod[f, t, r], "-", self.opti_produccion[f, n_opti-1, t, r]))          # prod_sim vs prod_opti (∑ax)
-                    print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, n_opti-1, t, r]))                  # L_sim vs L_opti
-                    print("-"*100)
-                    print()
-
-
-                    print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
-                    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
-                    for u in range(1, delta):
-                        print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u], "-",self.opti_inventario_final[f, n_opti-1, t, t+u, r]))
-                    print()
-                #----------------------SIMULACION VS OPTIMIZACION-----------------------------#
+                #if f in ['Entero'] and self._print:
+                #    print("-"*100)
+                #    print("                       {:<25} {:<20} {:1} {:<20}".format("Producto", "Simulacion", "-", "Optimizacion"))
+                #    print("Inv incial (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_S_inicial[f, t, r], "-", inv_inicial_opti))                  # S0 vs W0
+                #    print("Demanda    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_D_real[f, t, r], "-", self.opti_demanda[f, n_opti-1, t, r]))           # D_sim vs D_opti (alfa-beta*P)
+                #    print("Producc    (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_Prod[f, t, r], "-", self.opti_produccion[f, n_opti-1, t, r]))          # prod_sim vs prod_opti (∑ax)
+                #    print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, n_opti-1, t, r]))                  # L_sim vs L_opti
+                #    print("-"*100)
+                #    print()
+#
+#
+                #    print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
+                #    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
+                #    for u in range(1, delta):
+                #        print("S {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format(f, t, t+u, S0[f][u], "-",self.opti_inventario_final[f, n_opti-1, t, t+u, r]))
+                #    print()
+                ##----------------------SIMULACION VS OPTIMIZACION-----------------------------#
 
                 # 4.10º Almacenar metricas de producto (ingresos, costos inventario, costos merma)
                 if t <= self.times:
@@ -304,40 +303,41 @@ class Simulation:
         for r in range(1, self.replics+1):
             print("\nReplica:", r)
             self.run(r)
-            print(f"\nUtilidad replica {r}: {sum(list(self.objective_value.values()))}\n")
 
 
     def save_to_pickle(self, n_escenario):
         F, T, T_delta, T_0, T_0_delta, K, alfa, beta, delta, S0, a, h, c, q, c_merma, p_constante, p_compat, v_constante = self.get_parameters()
-        q = q[0]
+        q = int(q[1])
 
         if self.warm_up:
             directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/"
-            pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"P.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_S0).rename_axis(['f', 'u', 'r']).reset_index(name='value').to_excel(directorio+"S0.xlsx", engine='openpyxl')
+            pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"P.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_S0).rename_axis(['f', 'u', 'r']).reset_index(name='value').to_csv(directorio+"S0.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_Sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"Sales.csv", sep=';', index=False, encoding='utf-8')
+
 
         else:
             directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Escenario {n_escenario}/"
             # Guardar variables de simulacion
-            pd.Series(self.simulacion_X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_excel(directorio+"X.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_S_final).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"S.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_S_inicial).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"S_inicial.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_D).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"D.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"P.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_L).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"L.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_D_real).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"D_real.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_Sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"Sales.xlsx", engine='openpyxl')
-            pd.Series(self.simulacion_Prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod.xlsx", engine='openpyxl')
+            pd.Series(self.simulacion_X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_csv(directorio+"X.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_S_final).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"S.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_S_inicial).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"S_inicial.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_D).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"D.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"P.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_L).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"L.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_D_real).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"D_real.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_Sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"Sales.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.simulacion_Prod).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"prod.csv", sep=';', index=False, encoding='utf-8')
             
             # Guardar variables de optimizacion
-            pd.Series(self.opti_produccion).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"prod_opti.xlsx", engine='openpyxl')
-            pd.Series(self.opti_precio).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"P_opti.xlsx", engine='openpyxl')
-            pd.Series(self.opti_demanda).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_excel(directorio+"D_opti.xlsx", engine='openpyxl')
-            pd.Series(self.opti_inventario_final).rename_axis(['f', 'n', 't', 'u', 'r']).reset_index(name='value').to_excel(directorio+"S_opti.xlsx", engine='openpyxl')
+            pd.Series(self.opti_produccion).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_csv(directorio+"prod_opti.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.opti_precio).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_csv(directorio+"P_opti.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.opti_demanda).rename_axis(['f', 'n', 't', 'r']).reset_index(name='value').to_csv(directorio+"D_opti.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.opti_inventario_final).rename_axis(['f', 'n', 't', 'u', 'r']).reset_index(name='value').to_csv(directorio+"S_opti.csv", sep=';', index=False, encoding='utf-8')
 
             # Guardar metricas de simulacion
-            pd.Series(self.objective_value).rename_axis(['t', 'r']).reset_index(name='value').to_excel(directorio+"objective_value.xlsx", engine='openpyxl')
-            pd.Series(self.ingresos).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"ingresos.xlsx", engine='openpyxl')
-            pd.Series(self.costo_inventario).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_inventario.xlsx", engine='openpyxl')
-            pd.Series(self.costo_merma).rename_axis(['f', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_merma.xlsx", engine='openpyxl')
-            pd.Series(self.costo_corte).rename_axis(['k', 't', 'r']).reset_index(name='value').to_excel(directorio+"costo_corte.xlsx", engine='openpyxl')
+            pd.Series(self.objective_value).rename_axis(['t', 'r']).reset_index(name='value').to_csv(directorio+"objective_value.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.ingresos).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"ingresos.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.costo_inventario).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"costo_inventario.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.costo_merma).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"costo_merma.csv", sep=';', index=False, encoding='utf-8')
+            pd.Series(self.costo_corte).rename_axis(['k', 't', 'r']).reset_index(name='value').to_csv(directorio+"costo_corte.csv", sep=';', index=False, encoding='utf-8')

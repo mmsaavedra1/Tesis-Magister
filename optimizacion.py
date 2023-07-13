@@ -25,7 +25,7 @@ def timeit(func):
     return timeit_wrapper
 
 scaler = 1 # Factor de conversion para achicar modelo. (e.g. cajas de 200 pollos).
-mip_gap = 0.05 # Gap de optimalidad.
+mip_gap = 0.0001 # Gap de optimalidad.
 time_limit = 99999 # Máximo tiempo de resolución [s].
 periods = 30 # Horizonte temporal.  Si es None, por default es 90.
 save = False # Decision si guardar output de modelo.
@@ -65,9 +65,9 @@ def main():
         scaler=scaler,
         case=case, 
         iterate=False,
-        save=False, 
+        save=True, 
         loggin=1,
-        delta_=9)
+        delta_=7)
     
     
     """

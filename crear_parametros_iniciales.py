@@ -26,17 +26,18 @@ if __name__ == "__main__":
 
     ################# CREAR SIMULACIONES ###########a######
     case_politica_2 = 0                 # P_t != P_t-1 No necesariamente
-    replics = REPLICS                         # r
+    replics = REPLICS                   # r
 
     # Escenario_5
-    remaining_days = 7  # t2
-    periods = PERIODS        # t3
-    times = TIMES         # t4
-    simulation_5 = Simulation(
+    remaining_days =  21    # t2
+    periods = PERIODS       # t3
+    times = TIMES           # t4
+    simulation = Simulation(
         model=MODEL, filename=filename, mip_gap=mip_gap, time_limit=time_limit,
         scaler=scaler, periods=periods, delta=delta, times=times, replics=replics,
-        case=case_politica_2, it_case=5, remaining_days=remaining_days, error_dda=ERROR_DDA, _print=LOGGER, n_escenario=5, determinista=DETERMINISTA, warm_up=True)
+        case=case_politica_2, remaining_days=remaining_days, error_dda=ERROR_DDA,
+          _print=LOGGER, n_escenario=5, determinista=DETERMINISTA, warm_up=True)
 
     # Correr todas las simulaciones
-    simulation_5.run_replics()
-    simulation_5.save_to_pickle(n_escenario=5)
+    simulation.run_replics()
+    simulation.save_to_pickle(n_escenario=4)

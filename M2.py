@@ -135,8 +135,6 @@ def model_2(
     inv_inicial_sets = W0_sets(F, delta)
     inventario_set = P_sets(F, T)
 
-    print(f"q={q[1]}")
-
     # 3º Creacion de variables del modelo
     #Cantidad de cortes con patrón K en T en piezas de pollo (NO cajas) (solo períodos en los que se produce/vende)
     #Y = MVPFCF.addVars(produccion_set, vtype=GRB.INTEGER, lb=0,  name = 'y')
@@ -232,7 +230,7 @@ def model_2(
     # Maximizar beneficio operacional (venta - costo de inventario - costo de producción)
     #ORIGINAL
     if valores_residuales == None:
-        print("Optimizar SIN valores residuales")
+        #print("Optimizar SIN valores residuales")
         obj_v1 = quicksum(P[f, s]*(alfa[f][s] - beta[f][s] * P[f, s]) for f in F for s in T) - \
             quicksum(h_acum[f][t][s]*W[f, t, s] for f in F for t in T for s in range(t + 1, min(last_t + 2, t + delta))) - \
             quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
@@ -240,7 +238,7 @@ def model_2(
             quicksum(c[k] * X[k, t] for k in K for t in T)
     
     else:
-        print("Optimizar CON valores residuales")
+        #print("Optimizar CON valores residuales")
         obj_v1 = quicksum(P[f, s]*(alfa[f][s] - beta[f][s] * P[f, s]) for f in F for s in T) - \
             quicksum(h_acum[f][t][s]*W[f, t, s] for f in F for t in T for s in range(t + 1, min(last_t + 2, t + delta))) - \
             quicksum(h_acum[f][1][s]*W0[f, s, u] for f in F for s in range(2, delta) for u in range(s, delta)) - \
@@ -253,7 +251,7 @@ def model_2(
 
     # 6º Optimizar el modelo
     MVPFCF.update()
-    MVPFCF.write("modelo.lp")
+    #MVPFCF.write("modelo.lp")
     MVPFCF.optimize()
     MVPFCF.update()
 

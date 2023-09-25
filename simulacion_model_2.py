@@ -122,7 +122,7 @@ class Simulation:
 
     def generador_valores_residuales(self, q, replicas=50):
         dictionary = {}
-        P = pd.read_csv(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/P.csv", sep=';')
+        P = pd.read_csv(f"Resultados/{q}/Warmup/P.csv", sep=';')
         P['value'] = P['value']/replicas
         P = P[['f','t','r','value']].groupby(['f','t']).sum().reset_index()[['f','t','value']]
         P = P[P.t == PERIODS][['f', 'value']]
@@ -133,7 +133,7 @@ class Simulation:
 
     def generador_inventarios_iniciales(self, F, q, replicas=50):
         dictionary = {f: {self.delta: 0, self.delta+1: 0} for f in F}
-        S0 = pd.read_csv(f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/S0.csv", sep=';').reset_index()
+        S0 = pd.read_csv(f"Resultados/{q}/Warmup/S0.csv", sep=';').reset_index()
         S0['value'] = S0['value']/replicas
         S0 = S0[['f','u','r','value']].groupby(['f','u']).sum().reset_index()[['f','u','value']]
         for _, value in S0.iterrows():
@@ -151,9 +151,11 @@ class Simulation:
 
         # 1º Determinar si es warm up
         if not self.warm_up:
+            print("Optimizar CON valores residuales")
             self.valores_residuales = self.generador_valores_residuales(int(q[1]))
             S0 = self.generador_inventarios_iniciales(F, int(q[1])) 
         else:
+            print("Optimizar SIN valores residuales")
             self.valores_residuales = None 
 
         # 2º Manejo de tiempo entre Simulacion|Optimizacion
@@ -246,7 +248,7 @@ class Simulation:
                 if self.determinista:   
                     D_error = 0
                 else:
-                    D_error = -0.4 + self.error_dda[str(r)][str(t)][f]*0.8
+                    D_error = -1.0 + self.error_dda[str(r)][str(t)][f]*2.0
                 self.simulacion_D_real[f, t, r] = min(alfa[f][1], max(0, (1+D_error)*self.simulacion_D[f, t, r]))
                 
                 # 4.9º Actualizar inventarios segun ventas
@@ -267,8 +269,8 @@ class Simulation:
                 #    print("Merma      (t={:<2}) - {:<25}: {:<20} {:1} {:<20}".format(t, f, self.simulacion_L[f, t, r], "-", self.opti_merma[f, n_opti-1, t, r]))                  # L_sim vs L_opti
                 #    print("-"*100)
                 #    print()
-#
-#
+                #
+                #
                 #    print(f"(S) Inv final para vender en {t} que vence hasta {t+delta-1}")
                 #    print("   {:<10} {:<2} {:<2} {:<20} {:1} {:<20}".format("Producto", "t", "u", "Simulacion", "-", "Optimizacion"))
                 #    for u in range(1, delta):
@@ -310,14 +312,14 @@ class Simulation:
         q = int(q[1])
 
         if self.warm_up:
-            directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Warmup/"
+            directorio = f"Resultados/{q}/Warmup/"
             pd.Series(self.simulacion_P).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"P.csv", sep=';', index=False, encoding='utf-8')
             pd.Series(self.simulacion_S0).rename_axis(['f', 'u', 'r']).reset_index(name='value').to_csv(directorio+"S0.csv", sep=';', index=False, encoding='utf-8')
             pd.Series(self.simulacion_Sales).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"Sales.csv", sep=';', index=False, encoding='utf-8')
 
 
         else:
-            directorio = f"~/Desktop/Produccion-Tesis/Resultados/{q}/Escenario {n_escenario}/"
+            directorio = f"Resultados/{q}/Escenario {n_escenario}/"
             # Guardar variables de simulacion
             pd.Series(self.simulacion_X).rename_axis(['k', 't', 'r']).reset_index(name='value').to_csv(directorio+"X.csv", sep=';', index=False, encoding='utf-8')
             pd.Series(self.simulacion_S_final).rename_axis(['f', 't', 'r']).reset_index(name='value').to_csv(directorio+"S.csv", sep=';', index=False, encoding='utf-8')

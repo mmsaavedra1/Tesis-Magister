@@ -40,4 +40,4 @@ if __name__ == "__main__":
 
     # Correr todas las simulaciones
     simulation.run_replics()
-    simulation.save_to_pickle(n_escenario=4)
+    simulation.save_to_pickle(n_escenario=5)
